@@ -1,0 +1,162 @@
+{
+  "shots": [
+    {
+      "callsign": "NIGHTHAWK-1",
+      "score": 250,
+      "sortiesFlown": 2,
+      "rings": 1,
+      "traps": 0,
+      "flight": "0:3"
+    },
+    {
+      "callsign": "NIGHTHAWK-1",
+      "score": 250,
+      "sortiesFlown": 1,
+      "rings": 1,
+      "traps": 0,
+      "flight": "0:1"
+    },
+    {
+      "callsign": "NIGHTHAWK-1",
+      "score": 250,
+      "sortiesFlown": 2,
+      "rings": 1,
+      "traps": 0,
+      "flight": "0:3"
+    },
+    {
+      "callsign": "NIGHTHAWK-1",
+      "score": 250,
+      "sortiesFlown": 2,
+      "rings": 1,
+      "traps": 0,
+      "flight": "0:3"
+    }
+  ],
+  "checks": {
+    "boot: game object + first frames rendered": {
+      "pass": true,
+      "detail": "frames=11"
+    },
+    "boot: title screen visible": {
+      "pass": true,
+      "detail": ""
+    },
+    "boot: 3 save slots on title": {
+      "pass": true,
+      "detail": ""
+    },
+    "play: jet flies (W raises speed)": {
+      "pass": true,
+      "detail": "speed=212 kt"
+    },
+    "play: ring threaded for real (ringsFlown = 1)": {
+      "pass": true,
+      "detail": "ringsFlown=1"
+    },
+    "play: score earned (+250 for the clean ring)": {
+      "pass": true,
+      "detail": "score=250"
+    },
+    "play: radio log reports the clean pass": {
+      "pass": true,
+      "detail": ""
+    },
+    "play: chase camera shows the jet": {
+      "pass": true,
+      "detail": ""
+    },
+    "legibility: night shot": {
+      "pass": true,
+      "detail": "[]"
+    },
+    "cover: approach gate ahead in frame": {
+      "pass": true,
+      "detail": "{\"x\":640,\"y\":393,\"visible\":true}"
+    },
+    "cover: lit carrier deck ahead in frame": {
+      "pass": true,
+      "detail": "{\"x\":640,\"y\":454,\"visible\":true}"
+    },
+    "play: HUD shows altitude + speed + heading": {
+      "pass": true,
+      "detail": ""
+    },
+    "play: cockpit panel lit (5 gauges drawn)": {
+      "pass": true,
+      "detail": ""
+    },
+    "cover: earned score on the HUD (>= 250, matches the record)": {
+      "pass": true,
+      "detail": "score=250"
+    },
+    "cover: rings progress 1/5 on the HUD": {
+      "pass": true,
+      "detail": ""
+    },
+    "cover: fuel burned (displayed, not 100%)": {
+      "pass": true,
+      "detail": "fuel=98.96312499999995"
+    },
+    "cover: radio log visible with tower lines": {
+      "pass": true,
+      "detail": ""
+    },
+    "legibility: cover (no overflow / overlap / out-of-frame)": {
+      "pass": true,
+      "detail": "[]"
+    },
+    "legibility: proof screen": {
+      "pass": true,
+      "detail": "[]"
+    },
+    "proof: 6 honest total cells shown": {
+      "pass": true,
+      "detail": ""
+    },
+    "proof: score cell shows the session score": {
+      "pass": true,
+      "detail": ""
+    },
+    "proof: rings total matches the game (1 flown, 5 in build)": {
+      "pass": true,
+      "detail": ""
+    },
+    "legibility: title screen": {
+      "pass": true,
+      "detail": "[]"
+    },
+    "consistency: proof vs title record identical": {
+      "pass": true,
+      "detail": "[{\"callsign\":\"NIGHTHAWK-1\",\"score\":250,\"sortiesFlown\":2,\"rings\":1,\"traps\":0,\"flight\":\"0:3\"},{\"callsign\":\"NIGHTHAWK-1\",\"score\":250,\"sortiesFlown\":2,\"rings\":1,\"traps\":0,\"flight\":\"0:3\"}]"
+    },
+    "zero console errors": {
+      "pass": true,
+      "detail": ""
+    },
+    "zero failed network requests": {
+      "pass": true,
+      "detail": ""
+    },
+    "file: 01-cover.jpg exists (130 KB, ≤256 KiB)": {
+      "pass": true,
+      "detail": "132981 bytes"
+    },
+    "file: 02-night.jpg exists (108 KB, ≤256 KiB)": {
+      "pass": true,
+      "detail": "111087 bytes"
+    },
+    "file: 03-proof.jpg exists (68 KB, ≤256 KiB)": {
+      "pass": true,
+      "detail": "69660 bytes"
+    },
+    "file: 04-title.jpg exists (113 KB, ≤256 KiB)": {
+      "pass": true,
+      "detail": "115807 bytes"
+    },
+    "contact sheet built": {
+      "pass": true,
+      "detail": ""
+    }
+  }
+}
