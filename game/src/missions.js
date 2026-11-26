@@ -47,8 +47,8 @@ export function updateMission(m, s, world, hooks) {
       if (dx * dx + dy * dy + dz * dz < 17 * 17) {
         g.passed = true; g.mesh.visible = false; g.glow.visible = false;
         m.gatesPassed = (m.gatesPassed || 0) + 1;
-        addScore(150, 'approach gate clean');
-        radio('TOWER', `GATE ${m.gatesPassed} CLEAN +150 — ON GLIDE SLOPE`);
+        addScore(150, 'approach gate clean', m.id);
+        radio('VOSS', `GATE ${m.gatesPassed} CLEAN +150 — ON GLIDE SLOPE`);
         logEvent(`Approach gate ${m.gatesPassed} of 2 clean — +150`);
         return `GATE ${m.gatesPassed} OF 2 — CLEAN PASS +150`;
       }
@@ -62,13 +62,13 @@ export function updateMission(m, s, world, hooks) {
       if (dx * dx + dy * dy + dz * dz < 17 * 17) {
         r.passed = true; r.mesh.visible = false; r.glow.visible = false;
         m.ringsPassed += 1; record.ringsFlown += 1;
-        addScore(250, `ring ${m.ringsPassed} clean`);
-        radio('TOWER', `RING ${m.ringsPassed} CLEAN +250`);
+        addScore(250, `ring ${m.ringsPassed} clean`, m.id);
+        radio('VOSS', `RING ${m.ringsPassed} CLEAN +250`);
         logEvent(`Ring ${m.ringsPassed} of 5 threaded over the coast`);
         if (m.ringsPassed >= 5) {
           m.done = true; m.result = 'rings';
           record.sortiesComplete += 1;
-          radio('TOWER', 'ALL RINGS CLEAN — BRING HER HOME');
+          radio('VOSS', 'ALL RINGS CLEAN — BRING HER HOME');
           logEvent('Sortie 2 complete — all 5 rings threaded');
           hooks.onComplete?.(MISSIONS[1]);
           return 'RINGS COMPLETE — ALL 5 THREADED';
@@ -85,8 +85,8 @@ export function updateMission(m, s, world, hooks) {
       if (dx * dx + dz * dz < 55 * 55 && s.y > 40 && s.y < 320) {
         b.reached = true; b.diamond.visible = false; b.pillar.visible = false;
         m.waypointsReached += 1; record.waypointsReached += 1;
-        addScore(200, `patrol beacon ${m.waypointsReached}`);
-        radio('TOWER', `BEACON ${m.waypointsReached} CONFIRMED +200`);
+        addScore(200, `patrol beacon ${m.waypointsReached}`, m.id);
+        radio('VOSS', `BEACON ${m.waypointsReached} CONFIRMED +200`);
         logEvent(`Patrol beacon ${m.waypointsReached} of 4 reached`);
         if (m.waypointsReached >= 4) {
           m.done = true; m.result = 'patrol';
@@ -108,8 +108,8 @@ export function updateMission(m, s, world, hooks) {
       record.carrierLandings += 1;
       const sink = -s.vs;
       if (record.bestTrapVs === null || sink < record.bestTrapVs) record.bestTrapVs = sink;
-      addScore(500, 'carrier trap');
-      radio('TOWER', 'TRAP CONFIRMED +500 — WELCOME HOME');
+      addScore(500, 'carrier trap', m.id);
+      radio('VOSS', 'TRAP CONFIRMED +500 — WELCOME HOME');
       if (m.id === 1 && !m.done) {
         m.done = true; m.result = 'trap';
         record.sortiesComplete += 1;
@@ -120,8 +120,8 @@ export function updateMission(m, s, world, hooks) {
     }
     if (verdict === 'hard') {
       record.hardLandings += 1;
-      addScore(250, 'hard landing on deck');
-      radio('TOWER', 'HARD LANDING — AIRFRAME CHECK ON DECK');
+      addScore(250, 'hard landing on deck', m.id);
+      radio('VOSS', 'HARD LANDING — AIRFRAME CHECK ON DECK');
       logEvent(`Hard landing — airframe damaged ${dmg}%`);
       hooks.onTrap?.(verdict);
       return 'HARD LANDING — AIRFRAME DAMAGED';
@@ -144,17 +144,57 @@ export function updateMission(m, s, world, hooks) {
 }
 
 // Next ring / beacon / gate the pilot should fly toward (for the objective line).
-export function nextTarget(m, world) {
+// Now carries the REAL distance and a relative-bearing arrow, so the pilot
+// always knows how far the next target is and which way to turn for it.
+function distTo(s, x, y, z) { return Math.hypot(s.x - x, s.y - y, s.z - z); }
+
+// Relative bearing from the jet's nose to a point: ↑ ahead, ↗/↖ off the nose,
+// →/← abeam, ↘/↙ behind, ↓ dead astern.
+function relArrow(s, x, z) {
+  const want = Math.atan2(x - s.x, -(z - s.z));
+  const rel = (((want - s.heading) * 180 / Math.PI) % 360 + 540) % 360 - 180;
+  const a = Math.abs(rel);
+  if (a <= 22) return '↑ AHEAD';
+  if (a <= 67) return rel > 0 ? '↗ RIGHT' : '↖ LEFT';
+  if (a <= 112) return rel > 0 ? '→ RIGHT' : '← LEFT';
+  if (a <= 157) return rel > 0 ? '↘ BEHIND-R' : '↙ BEHIND-L';
+  return '↓ BEHIND';
+}
+
+// The next target as a world position, for the pulsing marker + light beam
+// (ocean.js markNext) and for the HUD distance. kind: gate | ring | beacon | deck.
+export function nextTargetPos(m, world) {
   if (m.id === 1) {
     const g = world.gates.find((g) => !g.passed);
-    return g ? `Gate ${((m.gatesPassed || 0) + 1)} of 2 ahead — fly the glide slope to the deck` : 'Gates clean — land on the lit deck, gear down';
+    if (g) return { kind: 'gate', x: g.x, y: g.y, z: g.z, obj: g };
+    return { kind: 'deck', x: CARRIER.x, y: DECK_Y, z: CARRIER.z, obj: null };
   }
   if (m.id === 2) {
     const r = world.rings.find((r) => !r.passed);
+    if (r) return { kind: 'ring', x: r.x, y: r.y, z: r.z, obj: r };
+    return { kind: 'deck', x: CARRIER.x, y: DECK_Y, z: CARRIER.z, obj: null };
+  }
+  const b = world.beacons.find((b) => !b.reached);
+  if (b) return { kind: 'beacon', x: b.x, y: 120, z: b.z, obj: b };
+  return { kind: 'deck', x: CARRIER.x, y: DECK_Y, z: CARRIER.z, obj: null };
+}
+
+export function nextTarget(m, world, s) {
+  if (m.id === 1) {
+    const g = world.gates.find((g) => !g.passed);
+    if (g && s) return `Gate ${((m.gatesPassed || 0) + 1)} of 2 — ${Math.round(distTo(s, g.x, g.y, g.z))} m ${relArrow(s, g.x, g.z)} — fly the glide slope`;
+    if (g) return `Gate ${((m.gatesPassed || 0) + 1)} of 2 ahead — fly the glide slope to the deck`;
+    if (s) return `Gates clean — deck ${Math.round(distTo(s, CARRIER.x, DECK_Y, CARRIER.z))} m ${relArrow(s, CARRIER.x, CARRIER.z)} — land, gear down`;
+    return 'Gates clean — land on the lit deck, gear down';
+  }
+  if (m.id === 2) {
+    const r = world.rings.find((r) => !r.passed);
+    if (r && s) return `Next ring ${m.ringsPassed + 1} of 5 — ${Math.round(distTo(s, r.x, r.y, r.z))} m ${relArrow(s, r.x, r.z)} — follow the coloured lights`;
     return r ? `Next ring ${m.ringsPassed + 1} of 5 — follow the coloured lights` : 'All rings threaded';
   }
   if (m.id === 3) {
     const b = world.beacons.find((b) => !b.reached);
+    if (b && s) return `Next beacon ${m.waypointsReached + 1} of 4 — ${Math.round(distTo(s, b.x, 120, b.z))} m ${relArrow(s, b.x, b.z)} — follow the light pillar`;
     return b ? `Next beacon ${m.waypointsReached + 1} of 4 — follow the light pillar` : 'All beacons reached — land on the carrier';
   }
   return 'Land on the lit deck — gear down, gentle and slow';

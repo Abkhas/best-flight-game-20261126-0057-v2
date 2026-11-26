@@ -14,7 +14,7 @@
       "sortiesFlown": 1,
       "rings": 1,
       "traps": 0,
-      "flight": "0:1"
+      "flight": "0:2"
     },
     {
       "callsign": "NIGHTHAWK-1",
@@ -36,7 +36,7 @@
   "checks": {
     "boot: game object + first frames rendered": {
       "pass": true,
-      "detail": "frames=11"
+      "detail": "frames=9"
     },
     "boot: title screen visible": {
       "pass": true,
@@ -66,6 +66,14 @@
       "pass": true,
       "detail": ""
     },
+    "play: slim bottom bar visible in chase (persistent HUD)": {
+      "pass": true,
+      "detail": ""
+    },
+    "play: compass strip drawn (top-centre)": {
+      "pass": true,
+      "detail": ""
+    },
     "legibility: night shot": {
       "pass": true,
       "detail": "[]"
@@ -90,15 +98,23 @@
       "pass": true,
       "detail": "score=250"
     },
-    "cover: rings progress 1/5 on the HUD": {
+    "cover: gates progress + session rings on the HUD": {
       "pass": true,
       "detail": ""
     },
-    "cover: fuel burned (displayed, not 100%)": {
+    "cover: objective shows live distance to the next target": {
       "pass": true,
-      "detail": "fuel=98.96312499999995"
+      "detail": "Gate 1 of 2 — 39 m ↑ AHEAD — fly the glide slope"
+    },
+    "cover: fuel burned (raw float, not 100%)": {
+      "pass": true,
+      "detail": "fuel=99.71432499999999"
     },
     "cover: radio log visible with tower lines": {
+      "pass": true,
+      "detail": ""
+    },
+    "cover: radio log has the named tower voice (VOSS)": {
       "pass": true,
       "detail": ""
     },
@@ -122,9 +138,41 @@
       "pass": true,
       "detail": ""
     },
+    "proof: session medal + best score shown (real values)": {
+      "pass": true,
+      "detail": ""
+    },
+    "proof: rank letter computed from the session": {
+      "pass": true,
+      "detail": ""
+    },
+    "proof: incident line from the record (clean session)": {
+      "pass": true,
+      "detail": ""
+    },
+    "proof: all 3 sorties show a score/medal state": {
+      "pass": true,
+      "detail": ""
+    },
+    "proof: pilot-log progress line in the debrief note": {
+      "pass": true,
+      "detail": ""
+    },
+    "proof: persistent top + bottom bars visible": {
+      "pass": true,
+      "detail": ""
+    },
     "legibility: title screen": {
       "pass": true,
       "detail": "[]"
+    },
+    "title: persistent top + bottom bars visible": {
+      "pass": true,
+      "detail": ""
+    },
+    "title: top bar shows the session score": {
+      "pass": true,
+      "detail": ""
     },
     "consistency: proof vs title record identical": {
       "pass": true,
@@ -138,21 +186,21 @@
       "pass": true,
       "detail": ""
     },
-    "file: 01-cover.jpg exists (130 KB, ≤256 KiB)": {
+    "file: 01-cover.jpg exists (136 KB, ≤256 KiB)": {
       "pass": true,
-      "detail": "132981 bytes"
+      "detail": "139138 bytes"
     },
-    "file: 02-night.jpg exists (108 KB, ≤256 KiB)": {
+    "file: 02-night.jpg exists (133 KB, ≤256 KiB)": {
       "pass": true,
-      "detail": "111087 bytes"
+      "detail": "136020 bytes"
     },
-    "file: 03-proof.jpg exists (68 KB, ≤256 KiB)": {
+    "file: 03-proof.jpg exists (123 KB, ≤256 KiB)": {
       "pass": true,
-      "detail": "69660 bytes"
+      "detail": "126098 bytes"
     },
-    "file: 04-title.jpg exists (113 KB, ≤256 KiB)": {
+    "file: 04-title.jpg exists (141 KB, ≤256 KiB)": {
       "pass": true,
-      "detail": "115807 bytes"
+      "detail": "144426 bytes"
     },
     "contact sheet built": {
       "pass": true,

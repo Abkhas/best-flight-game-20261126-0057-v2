@@ -7,6 +7,10 @@ export function buildJet() {
   const jet = new THREE.Group();
   const skin = new THREE.MeshPhongMaterial({ color: 0x8b98a8, specular: 0xc8d8e8, shininess: 90 });
   const dark = new THREE.MeshPhongMaterial({ color: 0x2c3442, specular: 0x556677, shininess: 60 });
+  // Nose cone + tip: LIGHT grey-blue, not the dark skin — from the cockpit
+  // the nose is the one piece of airframe the pilot always sees, so it must
+  // read as airframe against the night sea (was dark 0x2c3442, near-invisible).
+  const noseMat = new THREE.MeshPhongMaterial({ color: 0x7a8a9c, specular: 0xc8d8e8, shininess: 90 });
   const glass = new THREE.MeshPhongMaterial({
     color: 0x1a2a3a, specular: 0xffffff, shininess: 140, transparent: true, opacity: 0.45,
   });
@@ -14,12 +18,12 @@ export function buildJet() {
   // fuselage: tapered nose to tail
   const body = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.35, 9.5, 12), skin);
   body.rotation.x = Math.PI / 2; body.position.z = 0.4; jet.add(body);
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.2, 12), dark);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.2, 12), noseMat);
   // drooped nose: the real jet's nose drops away from the pilot's eye, so
   // the deck and the gates ahead stay visible over it from the cockpit.
   nose.rotation.x = -Math.PI / 2 - 0.12; nose.position.set(0, -0.35, -6.6); jet.add(nose);
   // radome tip
-  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.32, 1.1, 10), new THREE.MeshPhongMaterial({ color: 0x3a4556 }));
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.32, 1.1, 10), noseMat);
   tip.rotation.x = -Math.PI / 2 - 0.12; tip.position.set(0, -0.55, -8.6); jet.add(tip);
 
   // canopy: glass bubble over the front office
@@ -67,10 +71,15 @@ export function buildJet() {
   const navT = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
   navT.position.set(0, 0.6, 5.6); jet.add(navT);
 
-  // The nose the pilot sees from the cockpit: dark spine + pitot, low.
-  const spine = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.22, 4.5), dark);
+  // The nose the pilot sees from the cockpit: a LIGHT spine + amber centre
+  // stripe + bright pitot, low — so the airframe visibly answers the stick
+  // instead of reading as a dark smudge against a black sea (was all dark).
+  const spineMat = new THREE.MeshPhongMaterial({ color: 0x9aa8b8, specular: 0xc8d8e8, shininess: 90 });
+  const spine = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.22, 4.5), spineMat);
   spine.position.set(0, 0.3, -4.2); jet.add(spine);
-  const pitot = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 6), dark);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 3.2), new THREE.MeshBasicMaterial({ color: 0xffc46a }));
+  stripe.position.set(0, 0.52, -5.6); jet.add(stripe);
+  const pitot = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 6), spineMat);
   pitot.rotation.x = Math.PI / 2; pitot.position.set(0, -0.1, -8.2); jet.add(pitot);
 
   jet.userData = { nozzles, engineLight, navT, burnMat };

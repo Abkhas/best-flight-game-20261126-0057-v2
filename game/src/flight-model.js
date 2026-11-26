@@ -4,11 +4,11 @@
 
 export const LIMITS = {
   maxSpeed: 185,      // m/s at full throttle, clean
-  stallSpeed: 46,     // m/s — below this the wing quits and the nose drops
+  stallSpeed: 38,     // m/s — below this the wing quits and the nose drops
   approachSpeed: 62,  // m/s — the speed a good trap is flown at
   cruiseAlt: 400,     // m soft ceiling for the sorties
-  fuelBurnFull: 1.6,  // % per second at full throttle — fuel is a real decision
-  fuelBurnIdle: 0.35, // % per second at idle
+  fuelBurnFull: 0.45, // % per second at full throttle — a sortie lasts minutes
+  fuelBurnIdle: 0.08, // % per second at idle
 };
 
 export function freshState() {
@@ -44,31 +44,45 @@ export function step(s, input, dt) {
   // --- fuel: full throttle drinks, idle sips ---
   const burn = LIMITS.fuelBurnIdle + (LIMITS.fuelBurnFull - LIMITS.fuelBurnIdle) * s.throttle;
   s.fuel = Math.max(0, s.fuel - burn * dt);
-  if (s.fuel <= 0) s.throttle = Math.max(s.throttle, 0.12); // flameout glide
+  // Flameout is REAL now: fuel-out cuts the throttle to a 0.12 glide setting
+  // (was Math.max(throttle, 0.12) — a no-op that never lowered anything).
+  // At 0.12 the idle target speed (~70 m/s clean) stays well above stall,
+  // so the "FLAMEOUT — GLIDING" message is true and the glide is flyable.
+  if (s.fuel <= 0) s.throttle = 0.12;
 
   // --- speed chases the throttle, flaps and gear add drag ---
   const drag = 1 + s.flaps * 0.18 + (s.gearDown ? 0.12 : 0);
-  const target = (28 + s.throttle * (LIMITS.maxSpeed - 28)) / drag;
+  // Idle target speed (~55 m/s clean, ~42 m/s dirty) sits ABOVE the stall
+  // speed (38 clean, 32 flaps 15) — sustained LEVEL idle flight no longer
+  // guarantees a stall. Was 28 + throttle * 157: idle target 28 m/s.
+  // Climbing trades speed for height (and diving gains it), so the stall
+  // stays reachable — and recoverable — the honest way: haul the nose up
+  // at idle and the wing still quits; nose down + throttle up recovers.
+  let target = (55 + s.throttle * (LIMITS.maxSpeed - 55)) / drag;
+  target -= Math.sin(s.pitch) * 45;
+  target = Math.max(20, target);
   const accel = s.speed < target ? 14 : 22; // spool up slower than it slows down
   s.speed += clamp(target - s.speed, -accel * dt, accel * dt);
 
-  // --- stall ---
+  // --- stall: softer than before — slower nose-drop, gentler sink, so a
+  // pilot who hears the warning has seconds to recover, not a cliff edge ---
   const stallSpeed = LIMITS.stallSpeed + s.flaps * -6; // flaps buy a little margin
   s.stalled = s.speed < stallSpeed;
-  if (s.stalled) s.pitch -= 0.35 * dt; // nose drops on its own
+  if (s.stalled) s.pitch -= 0.18 * dt; // nose drops on its own (was 0.35)
 
-  // --- attitude from the stick ---
-  const pitchRate = 0.55 * (1 - Math.min(0.5, s.speed / LIMITS.maxSpeed));
+  // --- attitude from the stick: stronger authority, slower auto-centre, so
+  // a held or tapped input produces a visible, lasting attitude change ---
+  const pitchRate = 0.85 * (1 - Math.min(0.5, s.speed / LIMITS.maxSpeed));
   s.pitch = clamp(s.pitch + input.pitch * pitchRate * dt, -0.42, 0.5);
-  s.pitch *= Math.pow(0.4, dt); // stick centres itself; hold to hold attitude
-  const bankRate = 1.5;
+  s.pitch *= Math.pow(0.65, dt); // stick centres itself, slowly (was 0.4^dt)
+  const bankRate = 2.0;
   s.bank = clamp(s.bank + input.bank * bankRate * dt, -1.1, 1.1);
-  s.bank *= Math.pow(0.55, dt);
+  s.bank *= Math.pow(0.75, dt); // was 0.55^dt — attitude persists after release
   s.heading += -Math.sin(s.bank) * (s.speed / 160) * dt * 1.9; // bank turns the jet
-  s.heading += input.rudder * 0.12 * dt; // rudder fine-tunes the nose
+  s.heading += input.rudder * 0.18 * dt; // rudder fine-tunes the nose (was 0.12)
 
   // --- motion ---
-  const climb = Math.sin(s.pitch) * s.speed - (s.stalled ? 14 : 0) - (s.speed < 55 ? 3 : 0);
+  const climb = Math.sin(s.pitch) * s.speed - (s.stalled ? 8 : 0) - (s.speed < 30 ? 2 : 0);
   s.vs = climb;
   s.y += climb * dt;
   const hdg = s.heading;

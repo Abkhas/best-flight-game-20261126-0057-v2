@@ -37,12 +37,19 @@
   #hud-obj .lab { font-size: 10px; letter-spacing: 2px; color: #ffd27f; }
   #hud-obj .val { font-size: 16px; font-weight: 700; color: #fff3d6; }
   #hud-obj .sub { font-size: 12px; color: #cfe8ff; }
-  #hud-msg { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 700;
+  #hud-msg { position: absolute; top: 112px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 700;
     color: #ffe9a8; text-shadow: 0 2px 8px #000; text-align: center; white-space: nowrap; }
-  #hud-warn { position: absolute; top: 132px; left: 50%; transform: translateX(-50%); font-size: 15px; font-weight: 700;
+  #hud-warn { position: absolute; top: 148px; left: 50%; transform: translateX(-50%); font-size: 15px; font-weight: 700;
     color: #ff5d5d; text-shadow: 0 2px 8px #000; text-align: center; }
+  /* Compass strip: the top-centre compass the HUD was missing — ticks +
+     cardinal labels around the live heading, gold marker on the nose. */
+  #hud-compass { position: absolute; top: 78px; left: 50%; transform: translateX(-50%); }
+  #hud-compass canvas { display: block; }
   #hud-gear { position: absolute; bottom: 176px; right: 14px; font-family: "Consolas", monospace; font-size: 13px; color: #9fd8ff;
     background: rgba(4,12,24,.55); border: 1px solid rgba(110,200,255,.3); border-radius: 6px; padding: 6px 10px; }
+  #hud-hint { position: absolute; left: 12px; bottom: 164px; font-family: "Consolas", monospace; font-size: 12px;
+    letter-spacing: 1px; color: #9fd8ff; background: rgba(4,12,24,.55); border: 1px solid rgba(110,200,255,.3);
+    border-radius: 6px; padding: 6px 10px; white-space: nowrap; }
   #reticle { position: absolute; left: 50%; top: 42%; width: 26px; height: 26px; margin: -13px 0 0 -13px;
     border: 2px solid rgba(160, 220, 255, 0.85); border-radius: 50%; }
   #reticle::after { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px;
@@ -51,7 +58,7 @@
   #canopy { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 2; }
   #canopy.on { display: block; }
   #canopy .arch { position: absolute; inset: 0;
-    background: radial-gradient(ellipse 78% 62% at 50% 46%, transparent 58%, rgba(2,4,10,0.55) 72%, rgba(2,4,10,0.96) 88%); }
+    background: radial-gradient(ellipse 78% 62% at 50% 46%, transparent 58%, rgba(2,4,10,0.4) 72%, rgba(2,4,10,0.82) 88%); }
   #canopy .pillar-l, #canopy .pillar-r { position: absolute; top: 0; bottom: 150px; width: 34px;
     background: linear-gradient(90deg, #0a0f1c, #232c3d 45%, #0a0f1c); }
   #canopy .pillar-l { left: 0; transform: skewY(-4deg); transform-origin: top left; }
@@ -69,7 +76,28 @@
     box-shadow: inset 0 0 18px rgba(0,0,0,0.9), 0 0 12px rgba(40,140,255,0.12); }
   #panel .plate { color: #8fb6d8; font-size: 10px; letter-spacing: 2px; text-align: center; }
   #panel .plate b { display: block; color: #d7ecff; font-size: 11px; letter-spacing: 3px; margin-bottom: 3px; }
-  /* ---------- Screens ---------- */
+  /* ---------- Persistent slim bars (Boreal device, our night style) ----------
+     The same top compass bar + bottom gauge bar on EVERY shot: while flying
+     the full HUD serves, so these show on the proof + title screens (and the
+     bottom bar in chase view, where the big cockpit panel is hidden). Slim
+     dark translucent panels, thin borders — the values are the live session. */
+  #pbar-top, #pbar-bottom { position: fixed; left: 0; right: 0; z-index: 12; display: none;
+    pointer-events: none; background: rgba(3,7,15,0.85); color: #cfe8ff;
+    font-family: "Consolas", monospace; font-size: 12px; letter-spacing: 1px; }
+  #pbar-top { top: 0; height: 32px; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 1px solid rgba(110,200,255,0.3); }
+  #pbar-top .gold, #pbar-bottom .gold { color: #ffd27f; }
+  #pbar-bottom { bottom: 0; height: 34px; align-items: center; justify-content: center; gap: 16px;
+    border-top: 1px solid rgba(110,200,255,0.3); white-space: nowrap; overflow: hidden; }
+  /* ---------- Proof: session medal + per-sortie score/medal row ---------- */
+  #proof-medal { font-size: 16px; letter-spacing: 3px; color: #ffd27f; font-weight: 700; margin-bottom: 14px; }
+  #proof-sorties { display: flex; gap: 14px; margin-bottom: 16px; }
+  .scell { width: 210px; background: rgba(8,16,32,0.9); border: 1px solid rgba(120,200,255,0.35);
+    border-radius: 10px; padding: 10px 14px; text-align: left; }
+  .scell .lab { font-size: 11px; letter-spacing: 2px; color: #7fb8e8; }
+  .scell .val { font-family: "Consolas", monospace; font-size: 20px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .scell .sub { font-size: 12px; color: #9fc4e8; }
+  .scell .medal-gold { color: #ffd27f; } .scell .medal-silver { color: #d7ecff; } .scell .medal-bronze { color: #e09a5e; }
   .screen { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
     flex-direction: column; color: #eaf3ff; text-align: center; z-index: 10; }
   .screen.on { display: flex; }
@@ -101,6 +129,7 @@
   .pcell .val { font-family: "Consolas", monospace; font-size: 34px; font-weight: 700; color: #fff; line-height: 1.1; }
   .pcell .sub { font-size: 12px; color: #9fc4e8; }
   #proof-screen .note { font-size: 13px; color: #8fb6d8; max-width: 640px; line-height: 1.6; margin-bottom: 20px; }
+  #proof-incident { color: #e8b48a; margin-bottom: 6px; }
   #pause-screen, #end-screen { background: rgba(2,4,10,0.82); }
   #pause-screen h1, #end-screen h1 { font-size: 44px; letter-spacing: 6px; margin: 0 0 10px; }
   #end-screen .res { font-size: 18px; color: #ffe9a8; max-width: 560px; line-height: 1.6; margin-bottom: 20px; }
@@ -125,12 +154,17 @@
   <div class="hud-box" id="hud-fuel"><div class="lab">FUEL <span id="hud-fuel-v">100%</span></div><div class="bar"><div id="hud-fuel-bar" style="width:100%"></div></div>
     <div class="lab" style="margin-top:4px">HULL <span id="hud-hull-v">100%</span></div><div class="bar dmg"><div id="hud-hull-bar" style="width:100%"></div></div></div>
   <div class="hud-box" id="hud-obj"><div class="lab" id="hud-obj-kicker">SORTIE 1 OF 3</div><div class="val" id="hud-obj-name">CARRIER LANDING</div><div class="sub" id="hud-obj-sub">Land on the lit deck — gear down, gentle and slow.</div></div>
+  <div id="hud-compass"><canvas id="hud-compass-c" width="380" height="26"></canvas></div>
   <div id="hud-msg"></div>
   <div id="hud-warn"></div>
   <div id="radio-log"></div>
   <div id="hud-gear">GEAR DOWN &nbsp; FLAPS 0&deg;</div>
+  <div id="hud-hint">ARROWS FLY &nbsp;·&nbsp; W/S THROTTLE &nbsp;·&nbsp; A/D RUDDER + BANK &nbsp;·&nbsp; DRAG STEERS</div>
   <div id="reticle"></div>
 </div>
+
+<div id="pbar-top"><span>NIGHT DECK · USS MERIDIAN</span><span id="pbar-top-c" class="gold">HDG 000°</span><span id="pbar-top-r">SCORE 0</span></div>
+<div id="pbar-bottom"><span id="pbar-bot"></span></div>
 
 <div id="canopy"><div class="arch"></div><div class="pillar-l"></div><div class="pillar-r"></div><div class="strut sl"></div><div class="strut sr"></div></div>
 
@@ -149,16 +183,20 @@
     trap the wire on the carrier, thread the beacon rings over the city, then patrol the coast and come home.</div>
   <div class="slots" id="slots"></div>
   <div class="controls">
-    <b>W / S</b> throttle &nbsp;·&nbsp; <b>↑ ↓</b> pitch &nbsp;·&nbsp; <b>← →</b> bank &nbsp;·&nbsp; <b>A / D</b> rudder &nbsp;·&nbsp; <b>F</b> flaps &nbsp;·&nbsp; <b>G</b> gear<br>
+    <b>W / S</b> throttle &nbsp;·&nbsp; <b>↑ ↓</b> pitch &nbsp;·&nbsp; <b>← →</b> bank &nbsp;·&nbsp; <b>A / D</b> rudder + bank &nbsp;·&nbsp; <b>F</b> flaps &nbsp;·&nbsp; <b>G</b> gear<br>
     <b>C</b> camera &nbsp;·&nbsp; <b>1 / 2 / 3</b> sortie &nbsp;·&nbsp; <b>M</b> pilot log &nbsp;·&nbsp; <b>P</b> pause &nbsp;·&nbsp; <b>R</b> restart &nbsp;·&nbsp; mouse drag steers
   </div>
   <button class="big-btn" id="btn-fly">FLY — SORTIE 1</button>
+  <div class="tag" style="margin-top:16px; margin-bottom:0">CONTROLS ARE LIVE ONLY IN FLIGHT — PRESS <b>ENTER</b> OR CLICK <b>FLY</b> TO START. KEYS DO NOTHING ON THIS SCREEN.</div>
 </div>
 
 <div class="screen" id="proof-screen">
   <h1>PILOT RECORD</h1>
   <h2 id="proof-callsign">CALLSIGN NIGHTHAWK-1 · USS MERIDIAN</h2>
+  <div id="proof-medal"></div>
   <div class="proof-grid" id="proof-grid"></div>
+  <div id="proof-sorties"></div>
+  <div class="note" id="proof-incident"></div>
   <div class="note" id="proof-note"></div>
   <button class="big-btn" id="btn-proof-back">BACK TO COCKPIT</button>
 </div>

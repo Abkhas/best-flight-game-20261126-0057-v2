@@ -2,7 +2,7 @@
 // from saves.js (the single source of truth), so the title slots and the
 // proof screen can never disagree.
 
-import { record, proofCells, proofNote, SLOTS, GAME } from './saves.js';
+import { record, proofCells, proofNote, SLOTS, GAME, sortieMedals, sessionMedal, sessionRank, incidentLine } from './saves.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -45,6 +45,24 @@ export function showProof() {
     div.innerHTML = `<div class="lab">${cell.lab}</div><div class="val">${cell.val}</div><div class="sub">${cell.sub}</div>`;
     grid.appendChild(div);
   }
+  // Session medal + BEST score (real session values) and one score/medal
+  // cell per sortie — every sortie shows its state, not just a log line.
+  const medal = sessionMedal();
+  $('proof-medal').textContent = medal === '—'
+    ? 'NO MEDAL YET — FLY A SORTIE · RANK D · BEST SCORE ' + record.score
+    : `★ SESSION MEDAL — ${medal} · RANK ${sessionRank()} · BEST SCORE ${record.score}`;
+  const row = $('proof-sorties');
+  row.innerHTML = '';
+  for (const s of sortieMedals()) {
+    const div = document.createElement('div');
+    div.className = 'scell';
+    const cls = s.medal === 'GOLD' ? 'medal-gold' : s.medal === 'SILVER' ? 'medal-silver' : s.medal === 'BRONZE' ? 'medal-bronze' : '';
+    div.innerHTML = `<div class="lab">SORTIE ${s.id} · ${s.name}</div>`
+      + `<div class="val"><span class="${cls}">${s.medal === '—' ? '— NO MEDAL' : '★ ' + s.medal}</span></div>`
+      + `<div class="sub">${s.score} PTS · ${s.note}</div>`;
+    row.appendChild(div);
+  }
+  $('proof-incident').textContent = incidentLine();
   $('proof-note').textContent = proofNote();
   $('proof-callsign').textContent = `CALLSIGN ${record.callsign} · ${GAME.carrier}`;
   show('proof-screen');

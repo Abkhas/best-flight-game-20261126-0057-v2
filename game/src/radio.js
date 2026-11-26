@@ -1,7 +1,9 @@
-// radio.js — the carrier tower radio log. The depth device: a running feed of
-// tower chatter that only ever reports things that actually happened in the
-// game (clearances on sortie start, clean passes, traps, warnings). Rendered
-// into #radio-log; the last 4 lines show, the full feed lives in the pilot log.
+// radio.js — the carrier tower radio log. The tower voice is NAMED: VOSS,
+// the Meridian tower controller on the night watch — every line in the log
+// is spoken by her, not by a generic "TOWER". The feed only ever reports
+// things that actually happened in the game (clearances on sortie start,
+// clean passes, traps, warnings). Rendered into #radio-log; the last 4 lines
+// show, the full feed lives in the pilot log.
 
 const lines = [];
 const MAX = 24;
@@ -18,8 +20,8 @@ function render() {
   const el = document.getElementById('radio-log');
   if (!el) return;
   const last = lines.slice(-4);
-  el.innerHTML = '<div class="rhead">RADIO · MERIDIAN TOWER</div>' + last.map((l) =>
-    `<div class="rline"><b class="${l.speaker === 'TOWER' ? 'twr' : l.speaker === 'NIGHTHAWK-1' ? 'plt' : 'sys'}">${l.speaker}</b> ${l.text}</div>`,
+  el.innerHTML = '<div class="rhead">RADIO · VOSS — MERIDIAN TOWER</div>' + last.map((l) =>
+    `<div class="rline"><b class="${l.speaker === 'VOSS' ? 'twr' : l.speaker === 'NIGHTHAWK-1' ? 'plt' : 'sys'}">${l.speaker}</b> ${l.text}</div>`,
   ).join('');
 }
 

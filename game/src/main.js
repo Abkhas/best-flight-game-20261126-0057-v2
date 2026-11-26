@@ -5,11 +5,11 @@ import * as THREE from 'three';
 import { buildWorld, DECK_Y } from './ocean.js';
 import { buildJet, poseJet, animateJet } from './jet.js';
 import { freshState, step, LIMITS } from './flight-model.js';
-import { MISSIONS, missionState, resetMissionVisuals, updateMission, nextTarget } from './missions.js';
+import { MISSIONS, missionState, resetMissionVisuals, updateMission, nextTarget, nextTargetPos } from './missions.js';
 import { drawAll } from './instruments.js';
-import { updateHUD, setMessage, showHUD } from './hud.js';
+import { updateHUD, setMessage, showHUD, renderPersistentBars } from './hud.js';
 import { makeCamera, updateCamera, CAM_MODES } from './camera.js';
-import { ensureAudio, updateAudio, chime, thud } from './audio.js';
+import { ensureAudio, updateAudio, chime, thud, stallWarn } from './audio.js';
 import { record, logEvent, addFlightTime, GAME } from './saves.js';
 import { radio } from './radio.js';
 import { showTitle, showProof, showPause, showEnd, showLog, hideScreens } from './screens.js';
@@ -36,6 +36,7 @@ let frozen = false; // capture harness freezes physics after the cover shot
 let frames = 0;
 let lastT = performance.now();
 let msgShown = false;
+let wasStalled = false; // stall-entry edge: radio + audio fire once per stall
 
 // --- mission control -------------------------------------------------------
 function beginMission(id, count = true) {
@@ -47,18 +48,22 @@ function beginMission(id, count = true) {
   flight.pitch = 0; flight.bank = 0; flight.vs = 0;
   flight.fuel = 100; flight.damage = 0;
   resetMissionVisuals(world);
+  // Camera resets every sortie: a sortie always starts in the cockpit,
+  // never inherits a chase/orbit view left over from a previous run.
+  camMode = 'cockpit'; camIndex = 0;
+  wasStalled = false;
   if (count) {
     record.sortiesFlown += 1;
     logEvent(`Sortie ${id} started — ${def.name}`);
     if (id === 1) {
-      radio('TOWER', 'CLEARED TO LAND — WIND 12 KT');
-      radio('TOWER', 'FLY THE GATES, THEN TRAP THE WIRE');
+      radio('VOSS', 'CLEARED TO LAND — WIND 12 KT');
+      radio('VOSS', 'FLY THE GATES, THEN TRAP THE WIRE');
     } else if (id === 2) {
-      radio('TOWER', 'NIGHTHAWK-1, CLEARED FOR INTERCEPT');
-      radio('TOWER', 'THREAD ALL 5 RINGS, THEN COME HOME');
+      radio('VOSS', 'NIGHTHAWK-1, CLEARED FOR INTERCEPT');
+      radio('VOSS', 'THREAD ALL 5 RINGS, THEN COME HOME');
     } else {
-      radio('TOWER', 'NIGHTHAWK-1, PATROL THE COAST');
-      radio('TOWER', '4 BEACONS, THEN TRAP ON THE DECK');
+      radio('VOSS', 'NIGHTHAWK-1, PATROL THE COAST');
+      radio('VOSS', '4 BEACONS, THEN TRAP ON THE DECK');
     }
   }
   setMessage(def.name + ' — ' + def.brief, 5);
@@ -83,6 +88,19 @@ function applyCamVisibility() {
   document.getElementById('canopy').classList.toggle('on', cockpit && screen === 'flying');
   document.getElementById('panel').classList.toggle('on', cockpit && screen === 'flying');
   document.getElementById('reticle').style.display = cockpit && screen === 'flying' ? 'block' : 'none';
+  layoutPersistentBars();
+}
+
+// Persistent slim bars: the top compass bar shows on the proof + title
+// screens (where the full HUD is hidden); the bottom gauge bar shows there
+// too, and in chase view while flying (where the big cockpit panel hides).
+// In cockpit flight the panel itself is the bottom bar, so the slim one stays off.
+function layoutPersistentBars() {
+  const top = document.getElementById('pbar-top');
+  const bot = document.getElementById('pbar-bottom');
+  const staticScreen = screen === 'proof' || screen === 'title';
+  top.style.display = staticScreen ? 'flex' : 'none';
+  bot.style.display = (staticScreen || (screen === 'flying' && camMode !== 'cockpit')) ? 'flex' : 'none';
 }
 
 function endSortie(title, text) {
@@ -99,14 +117,14 @@ const hooks = {
       endSortie('TRAPPED!', `Wire caught on ${GAME.carrier}. Gentle, slow, gear down — exactly how the deck likes it. `
         + `Sortie ${missionId} complete. Press R to fly again, or 1 / 2 / 3 for another sortie.`);
     } else {
-      radio('TOWER', 'DAMAGE REPORT ON DECK — STAND BY');
+      radio('VOSS', 'DAMAGE REPORT ON DECK — STAND BY');
       endSortie('HARD LANDING', 'You made the deck, but the airframe took damage. '
         + 'Slower next time, and watch the sink rate. Press R to fly again.');
     }
   },
   onCrash: (reason) => {
     thud();
-    radio('TOWER', 'MAYDAY — RESCUE LAUNCHED');
+    radio('VOSS', 'MAYDAY — RESCUE LAUNCHED');
     endSortie('SORTIE LOST', reason === 'ditching'
       ? 'Into the sea. The ocean keeps what it catches — press R to fly again.'
       : 'Deck impact. The jet is done — press R to fly again.');
@@ -191,9 +209,11 @@ function loop(now) {
   if (screen === 'flying' && !frozen) {
     const pitchIn = (keys.ArrowUp ? 1 : 0) - (keys.ArrowDown ? 1 : 0)
       + (drag ? -drag.dy / 120 : 0);
-    const bankIn = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0)
-      + (drag ? drag.dx / 120 : 0);
     const rudderIn = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+    // A/D is a coordinated turn now: rudder plus a half-bank, so WASD
+    // steering visibly rolls the jet instead of doing almost nothing.
+    const bankIn = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0)
+      + (drag ? drag.dx / 120 : 0) + rudderIn * 0.5;
     const thrIn = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
     step(flight, {
       pitch: Math.max(-1, Math.min(1, pitchIn)),
@@ -201,10 +221,18 @@ function loop(now) {
       rudder: rudderIn,
       throttleDelta: thrIn,
     }, dt);
+    // Stall ENTRY (edge, not every frame): tower radio call + audio cue.
+    if (flight.stalled && !wasStalled) {
+      radio('VOSS', "NIGHTHAWK-1, YOU'RE STALLING — THROTTLE UP");
+      stallWarn();
+    }
+    wasStalled = flight.stalled;
+    // The next target gets the pulsing marker + light beam (ocean.js).
+    world.markNext?.(nextTargetPos(mission, world), flight);
     addFlightTime(dt);
     const event = updateMission(mission, flight, world, hooks);
     if (event) { setMessage(event, 4); if (/RING|BEACON/.test(event)) chime(988); }
-    updateHUD(flight, MISSIONS[missionId - 1], nextTarget(mission, world), dt);
+    updateHUD(flight, MISSIONS[missionId - 1], nextTarget(mission, world, flight), dt, mission, camMode);
     drawAll(flight);
     updateAudio(flight.throttle, flight.speed);
     if (flight.fuel <= 0 && !msgShown) { msgShown = true; setMessage('FLAMEOUT — GLIDING, FIND THE DECK', 5); }
@@ -265,9 +293,17 @@ window.__kit = {
     setMessage('INTERCEPT — THREAD THE RINGS', 6);
   },
   // Shot 3 — proof screen.
-  stageProof() { screen = 'proof'; showHUD(false); showProof(); },
+  stageProof() {
+    screen = 'proof'; showHUD(false);
+    renderPersistentBars(flight, MISSIONS[missionId - 1], mission, camMode);
+    layoutPersistentBars(); showProof();
+  },
   // Shot 4 — title screen with the 3 slots.
-  stageTitle() { parkOnDeck(); missionId = 1; screen = 'title'; showHUD(false); showTitle(); },
+  stageTitle() {
+    parkOnDeck(); missionId = 1; screen = 'title'; showHUD(false);
+    renderPersistentBars(flight, MISSIONS[0], missionState(1), camMode);
+    layoutPersistentBars(); showTitle();
+  },
 };
 
 // --- boot ------------------------------------------------------------------

@@ -135,6 +135,9 @@ async function main() {
     check('play: score earned (+250 for the clean ring)', await evalJs(`window.__game.save.score`) === 250, `score=${await evalJs('window.__game.save.score')}`);
     check('play: radio log reports the clean pass', await evalJs(`document.getElementById('radio-log').textContent.includes('RING 1 CLEAN +250')`));
     check('play: chase camera shows the jet', await evalJs(`window.__game.camMode === 'chase'`));
+    check('play: slim bottom bar visible in chase (persistent HUD)', await evalJs(`getComputedStyle(document.getElementById('pbar-bottom')).display === 'flex'`));
+    check('play: compass strip drawn (top-centre)', await evalJs(
+      `(() => { const c = document.getElementById('hud-compass-c'); const g = c.getContext('2d'); const d = g.getImageData(0,0,c.width,c.height).data; let lit = 0; for (let i = 0; i < d.length; i += 40) if (d[i]+d[i+1]+d[i+2] > 60) lit++; return lit > 5; })()`));
     await shot('02-night.jpg');
     const snap1 = await snapshot();
     check('legibility: night shot', (await legibility()).length === 0, JSON.stringify(await legibility()));
@@ -159,9 +162,11 @@ async function main() {
       `['g-att','g-spd','g-alt','g-hdg','g-thr'].every(id => { const c = document.getElementById(id); const g = c.getContext('2d'); const d = g.getImageData(0,0,c.width,c.height).data; let lit = 0; for (let i = 0; i < d.length; i += 400) if (d[i]+d[i+1]+d[i+2] > 60) lit++; return lit > 20; })`));
     check('cover: earned score on the HUD (>= 250, matches the record)', await evalJs(
       `document.getElementById('hud-score-v').textContent.replace(/,/g,'') === String(window.__game.save.score) && window.__game.save.score >= 250`), `score=${snap0.score}`);
-    check('cover: rings progress 1/5 on the HUD', await evalJs(`document.getElementById('hud-score-sub').textContent`) === 'RINGS 1 / 5');
-    check('cover: fuel burned (displayed, not 100%)', await evalJs(`document.getElementById('hud-fuel-v').textContent`) !== '100%', `fuel=${await evalJs('window.__game.flight.fuel')}`);
+    check('cover: gates progress + session rings on the HUD', await evalJs(`document.getElementById('hud-score-sub').textContent`) === 'GATES 0 / 2 · RINGS 1 / 5');
+    check('cover: objective shows live distance to the next target', await evalJs(`document.getElementById('hud-obj-sub').textContent.includes(' m ')`), await evalJs(`document.getElementById('hud-obj-sub').textContent`));
+    check('cover: fuel burned (raw float, not 100%)', await evalJs(`window.__game.flight.fuel`) < 99.9, `fuel=${await evalJs('window.__game.flight.fuel')}`);
     check('cover: radio log visible with tower lines', await evalJs(`document.querySelectorAll('#radio-log .rline').length >= 2`));
+    check('cover: radio log has the named tower voice (VOSS)', await evalJs(`document.getElementById('radio-log').textContent.includes('VOSS')`));
     check('legibility: cover (no overflow / overlap / out-of-frame)', (await legibility()).length === 0, JSON.stringify(await legibility()));
 
     // --- SHOT 3: proof screen ---
@@ -175,6 +180,18 @@ async function main() {
       `document.querySelector('.pcell:nth-child(1) .lab').textContent === 'SCORE' && document.querySelector('.pcell:nth-child(1) .val').textContent === String(${snap2.score})`));
     check('proof: rings total matches the game (1 flown, 5 in build)', await evalJs(
       `document.querySelector('.pcell:nth-child(3) .val').textContent === '1' && document.querySelector('.pcell:nth-child(3) .sub').textContent.includes('5 rings')`));
+    check('proof: session medal + best score shown (real values)', await evalJs(
+      `document.getElementById('proof-medal').textContent.includes('BEST SCORE 250')`));
+    check('proof: rank letter computed from the session', await evalJs(
+      `document.getElementById('proof-medal').textContent.includes('RANK C')`));
+    check('proof: incident line from the record (clean session)', await evalJs(
+      `document.getElementById('proof-incident').textContent.includes('INCIDENT LOG — Clean session')`));
+    check('proof: all 3 sorties show a score/medal state', await evalJs(
+      `document.querySelectorAll('#proof-sorties .scell').length === 3 && document.getElementById('proof-sorties').textContent.includes('NIGHT INTERCEPT')`));
+    check('proof: pilot-log progress line in the debrief note', await evalJs(
+      `document.getElementById('proof-note').textContent.includes('PILOT LOG — 0 of 3 sorties complete')`));
+    check('proof: persistent top + bottom bars visible', await evalJs(
+      `getComputedStyle(document.getElementById('pbar-top')).display === 'flex' && getComputedStyle(document.getElementById('pbar-bottom')).display === 'flex'`));
 
     // --- SHOT 4: title screen ---
     await evalJs(`window.__kit.stageTitle()`);
@@ -182,6 +199,10 @@ async function main() {
     await shot('04-title.jpg');
     const snap3 = await snapshot();
     check('legibility: title screen', (await legibility()).length === 0, JSON.stringify(await legibility()));
+    check('title: persistent top + bottom bars visible', await evalJs(
+      `getComputedStyle(document.getElementById('pbar-top')).display === 'flex' && getComputedStyle(document.getElementById('pbar-bottom')).display === 'flex'`));
+    check('title: top bar shows the session score', await evalJs(
+      `document.getElementById('pbar-top-r').textContent.includes('SCORE 250')`));
 
     // --- Consistency: proof and title show the same pilot record ---
     const same = snap2.callsign === snap3.callsign && snap2.rings === snap3.rings

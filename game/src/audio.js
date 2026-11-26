@@ -45,6 +45,8 @@ export function updateAudio(throttle, speed) {
   } catch { /* ignore */ }
 }
 
+export function audioOn() { return started; }
+
 export function chime(freq = 880) {
   if (!started || !actx) return;
   try {
@@ -54,6 +56,23 @@ export function chime(freq = 880) {
     g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.7);
     o.connect(g); g.connect(actx.destination);
     o.start(); o.stop(actx.currentTime + 0.75);
+  } catch { /* ignore */ }
+}
+
+// Stall warning: two descending square-wave blasts — unmistakable, and
+// called once per stall entry by main.js, never spammed every frame.
+export function stallWarn() {
+  if (!started || !actx) return;
+  try {
+    for (let i = 0; i < 2; i++) {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'square'; o.frequency.setValueAtTime(660, actx.currentTime + i * 0.35);
+      o.frequency.exponentialRampToValueAtTime(440, actx.currentTime + i * 0.35 + 0.22);
+      g.gain.setValueAtTime(0.09, actx.currentTime + i * 0.35);
+      g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + i * 0.35 + 0.3);
+      o.connect(g); g.connect(actx.destination);
+      o.start(actx.currentTime + i * 0.35); o.stop(actx.currentTime + i * 0.35 + 0.32);
+    }
   } catch { /* ignore */ }
 }
 

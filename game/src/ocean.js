@@ -83,28 +83,30 @@ export function buildWorld(scene) {
   }));
   halo.scale.set(520, 520, 1); halo.position.copy(moon.position); scene.add(halo);
 
-  // --- lights: low dusk sun + cool moonlight ---
-  const sun = new THREE.DirectionalLight(0xff9a5c, 1.1);
+  // --- lights: low dusk sun + cool moonlight, raised so the night READS ---
+  // (was sun 1.1 / moon 0.55 / ambient 1.05 — frames measured mean 22–27/255)
+  const sun = new THREE.DirectionalLight(0xff9a5c, 1.35);
   sun.position.set(-800, 220, 600); scene.add(sun);
-  const moonLight = new THREE.DirectionalLight(0x8fb4e8, 0.55);
+  const moonLight = new THREE.DirectionalLight(0x8fb4e8, 0.95);
   moonLight.position.set(-600, 900, -1200); scene.add(moonLight);
-  scene.add(new THREE.AmbientLight(0x24344f, 1.05));
-  scene.fog = new THREE.Fog(0x0a1226, 700, 3400);
+  scene.add(new THREE.AmbientLight(0x2e4258, 1.65));
+  scene.fog = new THREE.Fog(0x0a1226, 900, 3800);
 
-  // --- ocean: dark swell, moon glint ---
+  // --- ocean: dark swell, moon glint — brighter base + stronger specular so
+  // the swell catches light and the water READS as water, not a black void ---
   const oceanGeo = new THREE.PlaneGeometry(7000, 7000, 48, 48);
   oceanGeo.rotateX(-Math.PI / 2);
   const ocean = new THREE.Mesh(oceanGeo, new THREE.MeshPhongMaterial({
-    color: 0x0a1a2e, specular: 0x4a6a8a, shininess: 90, flatShading: false,
+    color: 0x142c48, specular: 0x7a9abb, shininess: 140, flatShading: false,
   }));
   ocean.position.y = 0; scene.add(ocean);
   world.oceanGeo = oceanGeo;
   const oceanBase = oceanGeo.attributes.position.array.slice();
 
-  // moon glint: a pale streak on the water under the moon
+  // moon glint: a pale streak on the water under the moon (wider + stronger)
   const glint = new THREE.Mesh(
-    new THREE.PlaneGeometry(260, 2600),
-    new THREE.MeshBasicMaterial({ color: 0xd8c9a0, transparent: true, opacity: 0.2, depthWrite: false }),
+    new THREE.PlaneGeometry(420, 2600),
+    new THREE.MeshBasicMaterial({ color: 0xd8c9a0, transparent: true, opacity: 0.38, depthWrite: false }),
   );
   glint.rotation.x = -Math.PI / 2; glint.position.set(-900, 0.4, -1500); scene.add(glint);
 
@@ -118,7 +120,7 @@ export function buildWorld(scene) {
   const shimTex = new THREE.CanvasTexture(shimC); shimTex.colorSpace = THREE.SRGBColorSpace;
   const shimmer = new THREE.Mesh(
     new THREE.PlaneGeometry(2400, 420),
-    new THREE.MeshBasicMaterial({ map: shimTex, transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ map: shimTex, transparent: true, opacity: 0.52, blending: THREE.AdditiveBlending, depthWrite: false }),
   );
   shimmer.rotation.x = -Math.PI / 2; shimmer.rotation.z = 0.35;
   shimmer.position.set(-1200, 0.6, -300); scene.add(shimmer);
@@ -136,7 +138,7 @@ export function buildWorld(scene) {
   beach.position.set(695, -1, -600); scene.add(beach);
 
   const winTex = windowTexture();
-  const cityMat = new THREE.MeshPhongMaterial({ color: 0x11151f, emissive: 0xffffff, emissiveMap: winTex, emissiveIntensity: 0.9 });
+  const cityMat = new THREE.MeshPhongMaterial({ color: 0x11151f, emissive: 0xffffff, emissiveMap: winTex, emissiveIntensity: 1.4 });
   const city = new THREE.Group();
   for (let i = 0; i < 150; i++) {
     const w = 14 + Math.random() * 22, d = 14 + Math.random() * 22, h = 12 + Math.random() * 58;
@@ -190,11 +192,11 @@ export function buildWorld(scene) {
       l.position.set(x, DECK_Y + 0.5, z); carrier.add(l);
     }
   }
-  // deck floodlight glow: a warm halo over the landing area
+  // deck floodlight glow: a warm halo over the landing area (stronger)
   const deckGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: glowSprite('#ffc46a'), transparent: true, opacity: 0.22, depthWrite: false,
+    map: glowSprite('#ffc46a'), transparent: true, opacity: 0.38, depthWrite: false,
   }));
-  deckGlow.scale.set(420, 150, 1); deckGlow.position.set(0, DECK_Y + 26, 0); carrier.add(deckGlow);
+  deckGlow.scale.set(520, 190, 1); deckGlow.position.set(0, DECK_Y + 26, 0); carrier.add(deckGlow);
   // centreline dashes + landing box (emissive paint, big enough to read at 200 m)
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xfff2c0 });
   for (let z = -110; z <= 110; z += 22) {
@@ -215,7 +217,7 @@ export function buildWorld(scene) {
   // island superstructure with lit windows
   const island = new THREE.Mesh(
     new THREE.BoxGeometry(14, 26, 52),
-    new THREE.MeshPhongMaterial({ color: 0x39404d, emissive: 0xffffff, emissiveMap: winTex, emissiveIntensity: 0.55 }),
+    new THREE.MeshPhongMaterial({ color: 0x39404d, emissive: 0xffffff, emissiveMap: winTex, emissiveIntensity: 0.9 }),
   );
   island.position.set(DECK.width / 2 - 8, DECK_Y + 13, -40); carrier.add(island);
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.8, 22, 8), hullMat);
@@ -287,6 +289,23 @@ export function buildWorld(scene) {
     world.beacons.push({ pillar, diamond, x, z, reached: false });
   });
 
+  // --- next-target beam: one reusable vertical light pillar, re-aimed every
+  // frame at the NEXT gate/ring/beacon by world.markNext() (main.js). The
+  // next target alone gets the big pulsing glow + this beam; later targets
+  // stay dimmer, so the pilot can always see what to fly at next. ---
+  const nextBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.5, 2.5, 380, 10, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0xffd27f, transparent: true, opacity: 0.16, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }),
+  );
+  nextBeam.position.set(0, 190, -640); nextBeam.visible = false; scene.add(nextBeam);
+  world.nextBeam = nextBeam;
+  let nextMark = null;
+  let nextDist = 1000; // metres from the jet to the next target (for the fade)
+  world.markNext = (m, s) => {
+    nextMark = m;
+    if (m && s) nextDist = Math.hypot(s.x - m.x, s.y - m.y, s.z - m.z);
+  };
+
   // --- animation tick: swell, beam sweep, ring pulse ---
   world.tick = (t) => {
     const pos = oceanGeo.attributes.position;
@@ -297,14 +316,39 @@ export function buildWorld(scene) {
     pos.needsUpdate = true;
     oceanGeo.computeVertexNormals();
     world.lighthouseBeam.rotation.y = t * 0.35;
+    // Next-target pulse: the marked target glows big + bright, the rest dim.
+    // The emphasis FADES with closeness (fade 1 beyond ~300 m, 0.12 under
+    // ~60 m) — at 46 m a full-size glow + beam would white-out the deck.
+    const pulse = 1 + Math.sin(t * 4) * 0.12;
+    const fade = Math.min(1, Math.max(0.12, (nextDist - 60) / 250));
+    if (nextMark && nextMark.kind !== 'deck') {
+      nextBeam.visible = true;
+      nextBeam.position.set(nextMark.x, 190, nextMark.z);
+      nextBeam.material.color.set(nextMark.kind === 'beacon' ? 0x39e0ff : nextMark.kind === 'ring' ? 0x9fd8ff : 0xffd27f);
+      nextBeam.material.opacity = (0.10 + Math.sin(t * 4) * 0.04) * fade;
+    } else nextBeam.visible = false;
     world.rings.forEach((r, i) => {
       const s = 1 + Math.sin(t * 2.2 + i) * 0.05;
       r.mesh.scale.set(s, s, 1);
+      const isNext = nextMark?.kind === 'ring' && nextMark.obj === r;
+      r.glow.material.opacity = isNext ? (0.5 + Math.sin(t * 4) * 0.2) * fade + 0.15 : 0.3;
+      const gs = isNext ? 70 * (1 + 0.5 * fade) * pulse : 70;
+      r.glow.scale.set(gs, gs, 1);
     });
-    world.beacons.forEach((b, i) => { b.diamond.rotation.y = t * 1.2 + i; });
+    world.beacons.forEach((b, i) => {
+      b.diamond.rotation.y = t * 1.2 + i;
+      const isNext = nextMark?.kind === 'beacon' && nextMark.obj === b;
+      b.diamond.scale.setScalar(isNext ? 1 + 0.4 * fade + Math.sin(t * 4) * 0.25 * fade : 1);
+      b.pillar.material.opacity = isNext ? (0.22 + Math.sin(t * 4) * 0.08) * fade + 0.08 : 0.16;
+    });
     world.gates.forEach((g, i) => {
       const s = 1 + Math.sin(t * 2.4 + i * 2) * 0.05;
       g.mesh.scale.set(s, s, 1);
+      const isNext = nextMark?.kind === 'gate' && nextMark.obj === g;
+      g.glow.material.opacity = isNext ? (0.5 + Math.sin(t * 4) * 0.2) * fade + 0.15 : 0.3;
+      const base = g.mesh.geometry.parameters.radius * 4;
+      const gs = isNext ? base * (1 + 0.25 * fade) * pulse : base;
+      g.glow.scale.set(gs, gs, 1);
     });
   };
 
