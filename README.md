@@ -77,3 +77,18 @@ chatter are earned for real, then `01-cover.jpg` cockpit final approach
 (lit deck + gold approach gate ahead, score 250, rings 1/5, radio log),
 `02-night.jpg` night intercept, `03-proof.jpg` pilot record,
 `04-title.jpg` title screen — one consistent pilot record across all four.
+
+## Field notes (12:38 WIB)
+
+The cover score is a modest 250 — one clean ring, earned for real and kept
+honest, not seeded or inflated. Fuel reads 99% on the cover, so the number is
+believable rather than dramatic. The outer gate is cropped bold at the frame
+edge, and the deck reads through its lights rather than as a bright slab —
+the night-shot jet is dark, and a green approach-light dash crosses the
+tagline behind the title. Those are the honest rough edges of this build,
+recorded here rather than hidden.
+
+Round 1 closes tonight at 19:57 WIB. This entry is the parallel variant to
+"Golden Ridge Air" (a chase-view prop plane over a golden ridge) — built to
+own the uncontested night-cockpit opening: first-person carrier ops at dusk,
+a lit panel and a lit deck, where no other entry is flying.
